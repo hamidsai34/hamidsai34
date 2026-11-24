@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import ActionForm from "@/components/ActionForm";
+import AiKeyFields from "@/components/AiKeyFields";
 import { getCurrentUser } from "@/lib/auth";
 import { login, register } from "@/app/auth-actions";
 
@@ -14,6 +15,7 @@ export default async function LoginPage() {
         <ActionForm action={login} className="stack">
           <label>البريد الإلكتروني<input name="email" type="email" required autoComplete="email" /></label>
           <label>كلمة السر<input name="password" type="password" required autoComplete="current-password" /></label>
+          <AiKeyFields />
           <button type="submit">دخول</button>
         </ActionForm>
       </div>
@@ -22,6 +24,7 @@ export default async function LoginPage() {
         <ActionForm action={register} className="stack">
           <label>البريد الإلكتروني<input name="email" type="email" required autoComplete="email" /></label>
           <label>كلمة السر (8 أحرف على الأقل)<input name="password" type="password" required minLength={8} autoComplete="new-password" /></label>
+          <AiKeyFields />
           <button type="submit" className="secondary">إنشاء الحساب</button>
         </ActionForm>
       </div>

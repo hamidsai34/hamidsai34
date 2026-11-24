@@ -7,10 +7,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, UPLOAD_DIR, type Photo } from "@/lib/db";
 import { actionUser } from "@/lib/auth";
-import { encryptSecret } from "@/lib/crypto";
 import { run, type ActionResult } from "@/lib/result";
-import { PROVIDERS, callAI, isProvider, type ImageInput } from "@/lib/ai/providers";
-import { getAiCredentials, getAiSettings } from "@/lib/ai/config";
+import { PROVIDERS, callAI, type ImageInput } from "@/lib/ai/providers";
+import { getAiCredentials } from "@/lib/ai/config";
+import { storeAiSettings } from "@/lib/ai/store";
 
 function str(form: FormData, key: string): string {
   return String(form.get(key) ?? "").trim();
@@ -165,32 +165,10 @@ export async function closeContract(form: FormData): Promise<ActionResult> {
 
 /* ---------- Paramètres IA ---------- */
 
-const KEY_PATTERN = /^[\x21-\x7e]{20,300}$/;
-
 export async function saveAiSettings(form: FormData): Promise<ActionResult> {
   return run(async () => {
     const user = await actionUser();
-    const provider = str(form, "provider");
-    if (!isProvider(provider)) throw new Error("Choisissez un fournisseur d'IA");
-    const model = str(form, "model") || PROVIDERS[provider].defaultModel;
-    if (!/^[A-Za-z0-9._:-]{1,80}$/.test(model)) throw new Error("Nom de modèle invalide");
-
-    const newKey = str(form, "api_key");
-    const existing = getAiSettings(user.id);
-    if (!newKey && !existing) throw new Error("Collez votre clé API");
-    if (newKey && !KEY_PATTERN.test(newKey)) throw new Error("Format de clé invalide");
-
-    if (newKey) {
-      db().prepare(`
-        INSERT INTO ai_settings (user_id, provider, model, key_encrypted, key_last4, updated_at)
-        VALUES (?, ?, ?, ?, ?, datetime('now'))
-        ON CONFLICT(user_id) DO UPDATE SET provider = excluded.provider, model = excluded.model,
-          key_encrypted = excluded.key_encrypted, key_last4 = excluded.key_last4, updated_at = excluded.updated_at
-      `).run(user.id, provider, model, encryptSecret(newKey), newKey.slice(-4));
-    } else {
-      db().prepare("UPDATE ai_settings SET provider = ?, model = ?, updated_at = datetime('now') WHERE user_id = ?")
-        .run(provider, model, user.id);
-    }
+    const provider = storeAiSettings(user.id, str(form, "provider"), str(form, "model"), str(form, "api_key"));
     revalidatePath("/settings");
     return `Paramètres enregistrés (${PROVIDERS[provider].label})`;
   });
