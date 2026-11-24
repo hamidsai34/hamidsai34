@@ -1,0 +1,12 @@
+{
+  "appId": "ma.gestionauto.app",
+  "appName": "gestionauto",
+  "webDir": "www",
+  "server": {
+    "url": "__APP_URL__",
+    "cleartext": false
+  },
+  "android": {
+    "backgroundColor": "#000000"
+  }
+}
