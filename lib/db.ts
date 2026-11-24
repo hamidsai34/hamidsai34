@@ -1,0 +1,104 @@
+import { DatabaseSync } from "node:sqlite";
+import fs from "node:fs";
+import path from "node:path";
+
+const DB_PATH = process.env.DATABASE_PATH ?? path.join(process.cwd(), "data", "gestionauto.db");
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __db: DatabaseSync | undefined;
+}
+
+function init(db: DatabaseSync) {
+  db.exec(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA foreign_keys = ON;
+
+    CREATE TABLE IF NOT EXISTS vehicles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      plate TEXT NOT NULL UNIQUE,
+      brand TEXT NOT NULL,
+      model TEXT NOT NULL,
+      year INTEGER,
+      color TEXT,
+      daily_rate REAL NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS clients (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      full_name TEXT NOT NULL,
+      cin TEXT,
+      license_number TEXT,
+      phone TEXT,
+      email TEXT,
+      address TEXT,
+      city TEXT,
+      postal_code TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS contracts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ref TEXT UNIQUE,
+      vehicle_id INTEGER NOT NULL REFERENCES vehicles(id),
+      client_id INTEGER NOT NULL REFERENCES clients(id),
+      start_at TEXT NOT NULL,
+      end_at TEXT NOT NULL,
+      daily_rate REAL NOT NULL,
+      deposit_amount REAL NOT NULL DEFAULT 0,
+      deposit_status TEXT NOT NULL DEFAULT 'held' CHECK (deposit_status IN ('held','refunded','retained')),
+      status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','closed')),
+      mileage_out INTEGER,
+      mileage_in INTEGER,
+      damage_notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      contract_id INTEGER NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL CHECK (kind IN ('checkout','return')),
+      angle TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+  // Set the reference after insert so it can use the autoincrement id (BK-1001, BK-1002...).
+  db.exec(`CREATE TRIGGER IF NOT EXISTS contracts_ref AFTER INSERT ON contracts
+    WHEN NEW.ref IS NULL BEGIN
+      UPDATE contracts SET ref = 'BK-' || (1000 + NEW.id) WHERE id = NEW.id;
+    END;`);
+}
+
+export function db(): DatabaseSync {
+  if (!globalThis.__db) {
+    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+    const instance = new DatabaseSync(DB_PATH);
+    init(instance);
+    globalThis.__db = instance;
+  }
+  return globalThis.__db;
+}
+
+export type Vehicle = {
+  id: number; plate: string; brand: string; model: string;
+  year: number | null; color: string | null; daily_rate: number;
+};
+
+export type Client = {
+  id: number; full_name: string; cin: string | null; license_number: string | null;
+  phone: string | null; email: string | null; address: string | null;
+  city: string | null; postal_code: string | null;
+};
+
+export type Contract = {
+  id: number; ref: string; vehicle_id: number; client_id: number;
+  start_at: string; end_at: string; daily_rate: number; deposit_amount: number;
+  deposit_status: "held" | "refunded" | "retained"; status: "open" | "closed";
+  mileage_out: number | null; mileage_in: number | null; damage_notes: string | null;
+};
+
+export type Photo = {
+  id: number; contract_id: number; kind: "checkout" | "return"; angle: string; file_path: string;
+};
