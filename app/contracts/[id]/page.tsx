@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ActionForm from "@/components/ActionForm";
+import AiDamageHelper from "@/components/AiDamageHelper";
 import { db, type Contract, type Photo, type Vehicle, type Client } from "@/lib/db";
-import { addPhoto, closeContract } from "@/app/actions";
+import { pageUser } from "@/lib/auth";
+import { addPhoto, closeContract, suggestDamageNotes } from "@/app/actions";
 import { money, dateTime, daysBetween } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -10,9 +12,11 @@ export const dynamic = "force-dynamic";
 const DEPOSIT_LABEL = { held: "محجوز", refunded: "مُرجَّع", retained: "محتفظ به" } as const;
 
 export default async function ContractPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await pageUser();
   const { id } = await params;
   const d = db();
-  const contract = d.prepare("SELECT * FROM contracts WHERE id = ?").get(Number(id)) as unknown as Contract | undefined;
+  const contract = d.prepare("SELECT * FROM contracts WHERE id = ? AND user_id = ?")
+    .get(Number(id), user.id) as unknown as Contract | undefined;
   if (!contract) notFound();
   const vehicle = d.prepare("SELECT * FROM vehicles WHERE id = ?").get(contract.vehicle_id) as unknown as Vehicle;
   const client = d.prepare("SELECT * FROM clients WHERE id = ?").get(contract.client_id) as unknown as Client;
@@ -20,6 +24,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
   const days = daysBetween(contract.start_at, contract.end_at);
   const total = days * contract.daily_rate;
   const isOpen = contract.status === "open";
+  const photoUrl = (p: Photo) => `/api/photos/${p.id}`;
 
   return (
     <>
@@ -32,7 +37,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
         <div className="card">
           <h2>تفاصيل العقد</h2>
           <p><strong>الزبون:</strong> {client.full_name}</p>
-          <p><strong>السيارة:</strong> {vehicle.plate} — {vehicle.brand} {vehicle.model}</p>
+          <p><strong>السيارة:</strong> <span dir="ltr">{vehicle.plate}</span> — {vehicle.brand} {vehicle.model}</p>
           <p><strong>من:</strong> {dateTime(contract.start_at)}<br /><strong>إلى:</strong> {dateTime(contract.end_at)}</p>
           <p><strong>المدة:</strong> {days} يوم — <strong>المجموع التقديري:</strong> {money(total)}</p>
           <p><strong>الكوسيون:</strong> {money(contract.deposit_amount)} ({DEPOSIT_LABEL[contract.deposit_status]})</p>
@@ -78,18 +83,25 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
             <h3 style={{ fontSize: 15 }}>عند الخروج</h3>
             <div className="photos">
               {photos.filter((p) => p.kind === "checkout").map((p) => (
-                <a key={p.id} href={p.file_path} target="_blank" rel="noreferrer"><img src={p.file_path} alt={p.angle} /></a>
+                <a key={p.id} href={photoUrl(p)} target="_blank" rel="noreferrer"><img src={photoUrl(p)} alt={p.angle} /></a>
               ))}
             </div>
             <h3 style={{ fontSize: 15 }}>عند الإرجاع</h3>
             <div className="photos">
               {photos.filter((p) => p.kind === "return").map((p) => (
-                <a key={p.id} href={p.file_path} target="_blank" rel="noreferrer"><img src={p.file_path} alt={p.angle} /></a>
+                <a key={p.id} href={photoUrl(p)} target="_blank" rel="noreferrer"><img src={photoUrl(p)} alt={p.angle} /></a>
               ))}
             </div>
           </>
         )}
       </div>
+
+      {isOpen && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h2>المساعدة بالذكاء الاصطناعي</h2>
+          <AiDamageHelper action={suggestDamageNotes} contractId={contract.id} />
+        </div>
+      )}
 
       {isOpen && (
         <div className="card" style={{ marginTop: 16 }}>

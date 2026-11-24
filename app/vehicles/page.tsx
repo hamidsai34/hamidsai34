@@ -1,12 +1,15 @@
 import ActionForm from "@/components/ActionForm";
 import { db, type Vehicle } from "@/lib/db";
+import { pageUser } from "@/lib/auth";
 import { createVehicle } from "@/app/actions";
 import { money } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default function VehiclesPage() {
-  const vehicles = db().prepare("SELECT * FROM vehicles ORDER BY brand, model").all() as unknown as Vehicle[];
+export default async function VehiclesPage() {
+  const user = await pageUser();
+  const vehicles = db().prepare("SELECT * FROM vehicles WHERE user_id = ? ORDER BY brand, model")
+    .all(user.id) as unknown as Vehicle[];
   return (
     <>
       <h1>السيارات</h1>
@@ -35,7 +38,7 @@ export default function VehiclesPage() {
             <div className="table-wrap"><table>
               <thead><tr><th>التسجيل</th><th>السيارة</th><th>الكراء/يوم</th></tr></thead>
               <tbody>{vehicles.map((v) => (
-                <tr key={v.id}><td>{v.plate}</td><td>{v.brand} {v.model} {v.year ?? ""}</td><td>{money(v.daily_rate)}</td></tr>
+                <tr key={v.id}><td dir="ltr">{v.plate}</td><td>{v.brand} {v.model} {v.year ?? ""}</td><td>{money(v.daily_rate)}</td></tr>
               ))}</tbody>
             </table></div>
           )}

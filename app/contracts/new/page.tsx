@@ -1,13 +1,15 @@
 import Link from "next/link";
 import ActionForm from "@/components/ActionForm";
 import { db, type Vehicle, type Client } from "@/lib/db";
+import { pageUser } from "@/lib/auth";
 import { createContract } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
-export default function NewContractPage() {
-  const vehicles = db().prepare("SELECT * FROM vehicles ORDER BY brand, model").all() as unknown as Vehicle[];
-  const clients = db().prepare("SELECT * FROM clients ORDER BY full_name").all() as unknown as Client[];
+export default async function NewContractPage() {
+  const user = await pageUser();
+  const vehicles = db().prepare("SELECT * FROM vehicles WHERE user_id = ? ORDER BY brand, model").all(user.id) as unknown as Vehicle[];
+  const clients = db().prepare("SELECT * FROM clients WHERE user_id = ? ORDER BY full_name").all(user.id) as unknown as Client[];
   const missing = vehicles.length === 0 || clients.length === 0;
 
   return (

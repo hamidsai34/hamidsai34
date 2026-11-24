@@ -1,20 +1,21 @@
 import { notFound } from "next/navigation";
 import { db, type Contract, type Vehicle, type Client } from "@/lib/db";
+import { pageUser } from "@/lib/auth";
 import { dateTime } from "@/lib/format";
 import PrintButton from "./PrintButton";
 
 export const dynamic = "force-dynamic";
 
 function Row({ k, v }: { k: string; v: string | null | undefined }) {
-  return (
-    <tr><td className="k">{k}</td><td>{v || "—"}</td></tr>
-  );
+  return <tr><td className="k">{k}</td><td>{v || "—"}</td></tr>;
 }
 
 export default async function DeclarationPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await pageUser();
   const { id } = await params;
   const d = db();
-  const contract = d.prepare("SELECT * FROM contracts WHERE id = ?").get(Number(id)) as unknown as Contract | undefined;
+  const contract = d.prepare("SELECT * FROM contracts WHERE id = ? AND user_id = ?")
+    .get(Number(id), user.id) as unknown as Contract | undefined;
   if (!contract) notFound();
   const vehicle = d.prepare("SELECT * FROM vehicles WHERE id = ?").get(contract.vehicle_id) as unknown as Vehicle;
   const client = d.prepare("SELECT * FROM clients WHERE id = ?").get(contract.client_id) as unknown as Client;

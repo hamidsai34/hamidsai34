@@ -56,3 +56,10 @@ button.secondary, .btn.secondary { background: var(--green); }
   body { background: #fff; }
   .declaration { border: 0; padding: 0; }
 }
+
+/* Added with accounts and AI settings */
+.notice { background: #e6f4ec; color: var(--ok); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+.link-button { background: none; border: 0; color: #fff; padding: 0; font: inherit; cursor: pointer; opacity: .9; }
+.link-button:hover { opacity: 1; text-decoration: underline; }
+.auth { max-width: 420px; margin: 24px auto; }
+.hint { font-size: 13px; color: var(--muted); }
