@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: "Gestion de votre agence de location de voitures",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#1f4d3a" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#000000" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();

@@ -63,3 +63,30 @@ button.secondary, .btn.secondary { background: var(--green); }
 .link-button:hover { opacity: 1; text-decoration: underline; }
 .auth { max-width: 420px; margin: 24px auto; }
 .hint { font-size: 13px; color: var(--muted); }
+
+/* Dark black theme */
+:root {
+  --cream: #000000;
+  --card: #111111;
+  --green: #0b0b0b;
+  --ink: #f5f5f5;
+  --muted: #9a9a9a;
+  --line: #2a2a2a;
+  --orange: #ff7a1a;
+  --danger: #ff5c5c;
+  --ok: #3ddc84;
+}
+body { background: #000; color: var(--ink); }
+header.top { background: #0b0b0b; border-bottom: 1px solid var(--line); }
+input, select, textarea { background: #1a1a1a; color: var(--ink); border-color: #333; }
+th { color: var(--muted); }
+.badge { background: #2a2a2a; color: var(--ink); }
+.badge.open { background: #3a2412; color: #ffb27a; }
+.badge.closed { background: #12321f; color: #3ddc84; }
+.alert { background: #3a1212; color: #ff8a8a; }
+.notice { background: #10261a; color: #3ddc84; }
+.declaration { background: #fff; color: #000; border-color: #999; }
+.declaration td { border-color: #999; }
+.declaration td.k { color: #333; }
+a { color: var(--orange); }
+button.secondary, .btn.secondary { background: #2a2a2a; color: var(--ink); }
